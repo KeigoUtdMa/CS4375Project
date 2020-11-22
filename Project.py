@@ -11,24 +11,28 @@ from keras.models import Sequential
 from keras.layers import Dense
 import tensorflow as tf
 import tensorflow_hub as hub
-
-g = Github("f9683247459c515c27feeeb0907d77c1bd01795f")
+from keras.callbacks import EarlyStopping, ReduceLROnPlateau
+#connect to github
+g = Github("75229308aac2dcb2943b461cb13665ee6b86e186")
 repo = g.get_user().get_repo("CS4375Project")
 
-epochs = 100
-numtrainImages = 1000
-numtestImages = 400
-trainimagedata = np.zeros((numtrainImages, 128, 128, 3))
-testimagedata = np.zeros((numtestImages, 128, 128, 3))
-shape = (128, 128)
+#set the basic parameter for the learning
+epochs = 10
+train_image = 1000
+test_Image = 400
+trainimagedata = np.zeros((train_image, 256, 256, 3))
+testimagedata = np.zeros((test_Image, 256, 256, 3))
+shape = (256, 256)
 
 trains = repo.get_contents("training_set")
-trainfilenames = []
+train_file = []
 traincategories = []
+
+#read files from training data set
 for file in trains:
   trainfilename = file.name
   traincategory = trainfilename.split('.')[0]
-  trainfilenames.append(trainfilename)
+  train_file.append(trainfilename)
   if (traincategory == "cat"):
     traincategories.append(0)
   else:
@@ -36,7 +40,8 @@ for file in trains:
 
 traincategories = to_categorical(traincategories)
 traincount = 0
-for name in trainfilenames:
+
+for name in train_file:
   trainresponse = requests.get("https://github.com/KeigoUtdMa/CS4375Project/blob/main/training_set/" + name + "?raw=true")
   trainimage = np.array(Image.open(BytesIO(trainresponse.content)).resize(shape))
   trainimagedata[traincount] = trainimage
@@ -48,6 +53,7 @@ model.add(Dense(2, activation = "softmax"))
 model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 model.summary()
 
+#image Data Generator
 datagen = ImageDataGenerator(
     rotation_range = 15,
     rescale = 1 / 255,
@@ -60,7 +66,7 @@ datagen = ImageDataGenerator(
 tests = repo.get_contents("test_set")
 testfilenames = []
 testcategories = []
-
+#go thought the 
 for file in tests:
   testfilename = file.name
   testcategory = testfilename.split('.')[0]
@@ -78,12 +84,15 @@ for name in testfilenames:
   testimagedata[testcount] = testimage
   testcount += 1
 
-from keras.callbacks import EarlyStopping, ReduceLROnPlateau
+
 earlystop = EarlyStopping(patience=10)
 learning_rate_reduction = ReduceLROnPlateau(monitor='val_accuracy', patience=2, verbose=1, factor=0.5, min_lr=0.00001)
 callbacks = [earlystop, learning_rate_reduction]
 
 hist = model.fit(datagen.flow(trainimagedata, traincategories), epochs = epochs, validation_data = (testimagedata, testcategories), callbacks = callbacks)
+"""
+plot for the graph
+"""
 plt.plot(hist.history["accuracy"])
 plt.plot(hist.history["val_accuracy"])
 plt.title("Model Accuracy")
