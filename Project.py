@@ -12,7 +12,7 @@ from keras.layers import Dense
 import tensorflow as tf
 import tensorflow_hub as hub
 
-g = Github("6c56c746c76f6528c2afbf70b308ab8868404a8a")
+g = Github("f9683247459c515c27feeeb0907d77c1bd01795f")
 repo = g.get_user().get_repo("CS4375Project")
 
 epochs = 100
